@@ -1,0 +1,355 @@
+{
+  "info": {
+    "_postman_id": "school-api-collection-001",
+    "name": "School Management API",
+    "description": "API collection for School Management System - Add schools and retrieve them sorted by proximity",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "123456"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has valid structure\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('status');",
+              "    pm.expect(jsonData.status).to.equal('OK');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "health"
+          ]
+        },
+        "description": "Check if the API is running and healthy"
+      },
+      "response": []
+    },
+    {
+      "name": "Add School",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Response has success flag\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});",
+              "",
+              "pm.test(\"Response contains school data\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('id');",
+              "    pm.expect(jsonData.data).to.have.property('name');",
+              "    pm.expect(jsonData.data).to.have.property('address');",
+              "    pm.expect(jsonData.data).to.have.property('latitude');",
+              "    pm.expect(jsonData.data).to.have.property('longitude');",
+              "});",
+              "",
+              "// Save school ID for later use",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.environment.set('school_id', jsonData.data.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Lincoln High School\",\n  \"address\": \"123 Main Street, Springfield\",\n  \"latitude\": 39.7817,\n  \"longitude\": -89.6501\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/schools/addSchool",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "schools",
+            "addSchool"
+          ]
+        },
+        "description": "Add a new school to the database"
+      },
+      "response": []
+    },
+    {
+      "name": "Add School - Validation Error",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 for validation error\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Response indicates validation failure\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.message).to.include('Validation failed');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"A\",\n  \"address\": \"123\",\n  \"latitude\": 200,\n  \"longitude\": -189\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/schools/addSchool",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "schools",
+            "addSchool"
+          ]
+        },
+        "description": "Test validation error handling"
+      },
+      "response": []
+    },
+    {
+      "name": "List Schools by Proximity",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has success flag\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});",
+              "",
+              "pm.test(\"Response contains required fields\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('userLocation');",
+              "    pm.expect(jsonData).to.have.property('totalSchools');",
+              "    pm.expect(jsonData).to.have.property('data');",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});",
+              "",
+              "pm.test(\"Schools are sorted by distance\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    var schools = jsonData.data;",
+              "    for (let i = 0; i < schools.length - 1; i++) {",
+              "        pm.expect(schools[i].distance).to.be.lessThanOrEqual(schools[i + 1].distance);",
+              "    }",
+              "});",
+              "",
+              "pm.test(\"Each school has distance property\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    jsonData.data.forEach(function(school) {",
+              "        pm.expect(school).to.have.property('distance');",
+              "        pm.expect(school.distance).to.be.a('number');",
+              "    });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/schools/listSchools?lat=39.7817&lon=-89.6501",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "schools",
+            "listSchools"
+          ],
+          "query": [
+            {
+              "key": "lat",
+              "value": "39.7817",
+              "description": "User's latitude"
+            },
+            {
+              "key": "lon",
+              "value": "-89.6501",
+              "description": "User's longitude"
+            }
+          ]
+        },
+        "description": "Get all schools sorted by proximity to user location"
+      },
+      "response": []
+    },
+    {
+      "name": "List Schools - Invalid Coordinates",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 for invalid coordinates\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Response indicates validation failure\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.message).to.include('Validation failed');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/schools/listSchools?lat=200&lon=-200",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "schools",
+            "listSchools"
+          ],
+          "query": [
+            {
+              "key": "lat",
+              "value": "200",
+              "description": "Invalid latitude (out of range)"
+            },
+            {
+              "key": "lon",
+              "value": "-200",
+              "description": "Invalid longitude (out of range)"
+            }
+          ]
+        },
+        "description": "Test validation for invalid coordinates"
+      },
+      "response": []
+    },
+    {
+      "name": "Get School by ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response contains school data\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "    pm.expect(jsonData.data).to.have.property('id');",
+              "    pm.expect(jsonData.data).to.have.property('name');",
+              "    pm.expect(jsonData.data).to.have.property('address');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/schools/{{school_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "schools",
+            "{{school_id}}"
+          ]
+        },
+        "description": "Get a specific school by its ID"
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Ensure base_url is set",
+          "if (!pm.environment.get('base_url')) {",
+          "    pm.environment.set('base_url', 'http://localhost:5000');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string",
+      "description": "Base URL for the API"
+    },
+    {
+      "key": "school_id",
+      "value": "1",
+      "type": "string",
+      "description": "School ID (auto-populated from Add School response)"
+    }
+  ]
+}
